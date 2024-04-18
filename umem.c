@@ -1,4 +1,3 @@
-#include "umem.h"
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -6,6 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include "umem.h"
 #define align(size) ((size + 7) & ~(8))
 #define pageSize getpagesize()
 
@@ -34,6 +34,24 @@ size_t roundingPages(size_t size) {
     }
     else {
         return size + (pageSize - remain);
+    }
+}
+
+
+//----------------------------------------//
+//                                        //
+//                  Debug                 //
+//                                        //
+//----------------------------------------//
+
+//testing roundingPages functionality
+void pageRoundTest() {
+    size_t sizes[] = {0, 1, 4096, 8192, 63, 41, 33, 26};
+    printf("testing roundingPage function:\n");
+    for (int i = 0; i < sizeof(sizes) / sizeof(sizes[0]); ++i) {
+        size_t original_size = sizes[i];
+        size_t rounded_size = roundingPages(original_size);
+        printf("Original size: %zu, Rounded size: %zu\n", original_size, rounded_size);
     }
 }
 
@@ -67,7 +85,7 @@ int umeminit(size_t sizeOfRegion, int allocationAlgo) {
     return 0;
 }
 
-/*void *umalloc(size_t size) {
+void *umalloc(size_t size) {
     int allocation;
     //take input of size and return pointer to beginning of object
     switch (allocation) {
@@ -96,6 +114,4 @@ int ufree(void *ptr) {
 void umemdump() {
     //debug routine. will print regions of free memory to the screen
 }
-
-*/
 
