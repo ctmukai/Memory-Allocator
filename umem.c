@@ -2,27 +2,72 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #define align(size) ((size + 7) & ~(8))
+#define pageSize getpagesize()
 
+//Free list structure for memory chunk
+typedef struct listThatIsFree {
+    size_t size;
+    struct listThatIsFree *next;
+} listThatIsFree;
 
+//Global Variables
+static int init = 0;
+static int AA = -1;
+static void *memRegion = NULL;
+
+listThatIsFree *luffy = NULL;
+
+//--------------------------------------------------//
+//                                                  //
+//                   Helper Functions               //
+//                                                  //      
+//--------------------------------------------------//
+size_t roundingPages(size_t size) {
+    size_t remain = size % pageSize;
+    if (remain == 0) {
+        return size;
+    }
+    else {
+        return size + (pageSize - remain);
+    }
+}
 
 int umeminit(size_t sizeOfRegion, int allocationAlgo) {
-    //code
-
-    int fd = open("/dev/zero", O_RDWR);
-    void *ptr = mmap(NULL, sizeOfRegion, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-    if (ptr == MAP_FAILED) {
-        perror("mmap");
-        exit(1);
+    //checking for multiple umeminit calls
+    if (init) {
+        fprintf(stderr, "umeminit is an initialization thus only needs to be called once.\n");
+        return -1;
     }
-    close(fd);
+
+    if (sizeOfRegion <= 0) {
+        fprintf(stderr, "Invalid region size.\n");
+        return -1;
+    }
+
+    AA = allocationAlgo;
+    init = 1;
+
+    sizeOfRegion = roundingPages(sizeOfRegion);
+    memRegion = mmap(NULL, sizeOfRegion, PROT_READ | PROT_WRITE, MAP_PRIVATE, -1, 0);
+
+    if (memRegion == MAP_FAILED) {
+        perror("mmap");
+        return -1;
+    }
+
+    luffy = (listThatIsFree*)memRegion;
+    luffy->size = sizeOfRegion - sizeof(listThatIsFree);
+    luffy->next = NULL;
+
     return 0;
 }
 
-void *umalloc(size_t size) {
+/*void *umalloc(size_t size) {
     int allocation;
     //take input of size and return pointer to beginning of object
     switch (allocation) {
@@ -45,11 +90,12 @@ void *umalloc(size_t size) {
 
 int ufree(void *ptr) {
     //coalesce free space
+    return 0;
 }
 
-void umemdump {
+void umemdump() {
     //debug routine. will print regions of free memory to the screen
 }
 
-
+*/
 
