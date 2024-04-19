@@ -19,13 +19,20 @@ int memIniTest(){
 }
 
 int main() {
-    umeminit(1024, 1); //initialization
-    memIniTest();
+    //initialization
+    int result = umeminit(80983, WORST_FIT); //testing if initialization requests correct # of bytes
+    if (result == 1) {
+        fprintf(stderr, "umeminit failed.\n");
+        return 1;
+    }
+    return 0;
+    umemdump();
+    /*memIniTest();
     void* eightBound = umalloc(64); //testing for umalloc allocating the memory
     if (eightBound) {
         printf("allo mem block at: %p\n", eightBound);
     }
     else {
         printf("mem allo fail\n");
-    }
+    }*/
 }

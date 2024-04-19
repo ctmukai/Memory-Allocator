@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "umem.h"
-#define align(size) ((size + 7) & ~(7))
+#define align(x) ((x + 7) & ~7)
 
 //Free list structure for memory chunk
 typedef struct listThatIsFree {
@@ -20,6 +20,8 @@ static int AA;
 static void* memRegion = NULL;
 static listThatIsFree* luffy = NULL; //most free man (on a list) captain
 static listThatIsFree* zoro = NULL; //next fit (right hand man)
+
+
 
 //--------------------------------------------------//
 //                                                  //
@@ -60,19 +62,25 @@ int umeminit(size_t sizeOfRegion, int allocationAlgo) {
     }
 
     size_t pageSize = getpagesize();
-    sizeOfRegion = (sizeOfRegion + pageSize - 1) / (pageSize * pageSize);
+    sizeOfRegion = (sizeOfRegion + pageSize - 1) / pageSize;
+    sizeOfRegion *= pageSize;
     int fd = open("/dev/zero", O_RDWR);
+    if (fd == -1) {
+        perror("open");
+        return -1;
+    }
 
     memRegion = mmap(NULL, sizeOfRegion, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
     if (memRegion == MAP_FAILED) {
         perror("mmap");
-        exit(1);
+        close(fd);
+        return -1;
     }
 
     luffy = (listThatIsFree*)memRegion;
-    luffy->size = sizeOfRegion - sizeof(listThatIsFree);
-    luffy->next = NULL;
+    luffy -> size = sizeOfRegion - sizeof(listThatIsFree);
+    luffy -> next = NULL;
     init = 1;
 
     umemdump();
@@ -138,4 +146,15 @@ int ufree(void *ptr) {
 
 void umemdump() {
     //debug routine. will print regions of free memory to the screen
+    printf("Memeory Dump:\n");
+    listThatIsFree* present = luffy;
+    int counterspell = 0;
+    int max = 10;
+    while (present != NULL && counterspell < max) {
+        printf("Chunk %d: Address %p, Size: %zu bytes, Next Chunk: %p\n", counterspell++, (void*)present, present -> size, (void*)present -> next);
+        present = present -> next;
+    }
+    if (counterspell >= max) {
+        printf("Too many chunks can't load or stuck in loop\n");
+    }
 }
