@@ -8,8 +8,8 @@
 #include <stdbool.h>
 
 int memIniTest(){
-    // Example usage
-    if (umeminit(8, FIRST_FIT) == 0) {
+    // testing for initialization
+    if (umeminit(1024, BEST_FIT) == 0) {
         printf("umeminit successful.\n");
     } else {
         printf("umeminit failed.\n");
@@ -19,5 +19,13 @@ int memIniTest(){
 }
 
 int main() {
+    umeminit(1024, 1); //initialization
     memIniTest();
+    void* eightBound = umalloc(64); //testing for umalloc allocating the memory
+    if (eightBound) {
+        printf("allo mem block at: %p\n", eightBound);
+    }
+    else {
+        printf("mem allo fail\n");
+    }
 }
