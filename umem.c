@@ -20,7 +20,8 @@ static int AA;
 static void* memRegion = NULL;
 static listThatIsFree* luffy = NULL; //most free man (on a list) captain
 static listThatIsFree* zoro = NULL; //next fit (right hand man)
-
+static listThatIsFree* present;
+static listThatIsFree* past = NULL;
 
 
 //--------------------------------------------------//
@@ -89,9 +90,8 @@ int umeminit(size_t sizeOfRegion, int allocationAlgo) {
 }
 
 void *umalloc(size_t size) {
-    int allocation;
     //take input of size and return pointer to beginning of object with allocation strategy
-    switch (allocation) {
+    switch (AA) {
         case BEST_FIT:
             size = align(size);
             if (size == 0)
@@ -100,8 +100,7 @@ void *umalloc(size_t size) {
             listThatIsFree* bf = NULL;
             listThatIsFree* lastBF = NULL;
             size_t bfSize = SIZE_MAX;
-            listThatIsFree* present = luffy;
-            listThatIsFree* past = NULL;
+            present = luffy;
 
             while (present) {
                 if (present -> size >= size && present -> size < bfSize) {
@@ -127,11 +126,94 @@ void *umalloc(size_t size) {
             else {
                 return NULL;
             }
+
         case WORST_FIT:
-        //next fit
+            present = luffy;
+            listThatIsFree* wf = NULL;
+            size_t wfSize = 0;
+
+            while (present != NULL) {
+                if (present -> size >= size && present -> size > wfSize) {
+                    wf = present;
+                    wfSize = present -> size;
+                }
+                present = present -> next;
+            }
+
+            if (wf == NULL) {
+                return NULL;
+            }
+
+            if (wfSize > size + sizeof(listThatIsFree)) {
+                listThatIsFree* newWorld = (listThatIsFree*)((char*)wf + size + sizeof(listThatIsFree));
+                newWorld -> size = wfSize - size - sizeof(listThatIsFree);
+                newWorld -> next = wf -> next;
+                wf -> size = size;
+                wf -> next = newWorld;
+            }
+
+            if (wf == luffy) {
+                luffy = wf -> next;
+            } else {
+                present = luffy;
+                while (present -> next != wf) {
+                    present = present -> next;
+                }
+                present -> next = wf -> next;
+            }
+            return (void*)(wf + 1);
+
         case NEXT_FIT:
-        //first fit
+
+            listThatIsFree* present = zoro ? zoro : luffy;
+
+            while (present != NULL) {
+                if (present -> size >= size) {
+                    if (present -> size > size + sizeof(listThatIsFree)) {
+                        listThatIsFree* newWorld = (listThatIsFree*)((char*)present + size + sizeof(listThatIsFree));
+                        newWorld -> size = present -> size - size - sizeof(listThatIsFree);
+                        newWorld -> next = present -> next;
+                        present -> size = size;
+                        present -> next = newWorld;
+                    }
+
+                    if (past == NULL) {
+                        luffy = present -> next;
+                    } else {
+                        past -> next = present -> next;
+                    }
+                    zoro = present -> next;
+                    return (void*)(present + 1);
+                }
+                past = present;
+                present = present -> next;
+            }
+            return NULL;
+
         case FIRST_FIT:
+            present = luffy;
+
+            while (present != NULL) {
+                if (present -> size >= size) {
+                    if (present -> size > size + sizeof(listThatIsFree)) {
+                        listThatIsFree* newWorld = (listThatIsFree*)((char*)present + size + sizeof(listThatIsFree));
+                        newWorld -> size = present -> size - size - sizeof(listThatIsFree);
+                        newWorld -> next = present -> next;
+                        present -> size = size;
+                        present -> next = newWorld;
+                    }
+
+                    if (past == NULL) {
+                        luffy = present -> next;
+                    } else {
+                        past -> next = present -> next;
+                    }
+                    return (void*)(present + 1);
+                }
+                past = present;
+                present = present -> next;
+            }
+            return NULL;
 
         default:
             fprintf(stderr, "Invalid Allocation\n");
@@ -140,13 +222,46 @@ void *umalloc(size_t size) {
 }
 
 int ufree(void *ptr) {
-    //coalesce free space
+    if (ptr == NULL) {
+        return 0;
+    }
+    listThatIsFree* impelDown = (listThatIsFree*)ptr - 1;
+    listThatIsFree* past = NULL;
+    listThatIsFree* present = luffy;
+
+    while (present != NULL) {
+        if ((char*)present + present -> size + sizeof(listThatIsFree) == (char*)impelDown) {
+            impelDown -> size += present -> size + sizeof(listThatIsFree);
+            impelDown -> next = present -> next;
+            if (past == NULL)
+                luffy = impelDown;
+            break;
+        } else if ((char*)impelDown + impelDown -> size + sizeof(listThatIsFree) == (char*)present) {
+            past -> size += impelDown -> size + sizeof(listThatIsFree);
+            past -> next = present -> next;
+            impelDown = past;
+            break;
+        } else {
+            past = present;
+            present = present -> next;
+        }
+    }
+
+    if (impelDown != past) {
+        if (past != NULL) {
+            past -> next = impelDown;
+        } else {
+            luffy = impelDown;
+        }
+        impelDown -> next = present;
+    }
+    umemdump();
     return 0;
 }
 
 void umemdump() {
     //debug routine. will print regions of free memory to the screen
-    printf("Memeory Dump:\n");
+    printf("Memeory Dump - ");
     listThatIsFree* present = luffy;
     int counterspell = 0;
     int max = 10;
