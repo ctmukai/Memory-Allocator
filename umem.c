@@ -62,6 +62,11 @@ int umeminit(size_t sizeOfRegion, int allocationAlgo) {
         return -1;
     }
 
+    if (allocationAlgo <= 0 || allocationAlgo > 4) {
+        fprintf(stderr, "Invalid Allocation Algorithm\n");
+        return -1;
+    }
+
     size_t pageSize = getpagesize();
     sizeOfRegion = (sizeOfRegion + pageSize - 1) / pageSize;
     sizeOfRegion *= pageSize;
@@ -264,12 +269,8 @@ void umemdump() {
     printf("Memeory Dump - ");
     listThatIsFree* present = luffy;
     int counterspell = 0;
-    int max = 10;
-    while (present != NULL && counterspell < max) {
+    while (present != NULL) {
         printf("Chunk %d: Address %p, Size: %zu bytes, Next Chunk: %p\n", counterspell++, (void*)present, present -> size, (void*)present -> next);
         present = present -> next;
-    }
-    if (counterspell >= max) {
-        printf("Too many chunks can't load or stuck in loop\n");
     }
 }
