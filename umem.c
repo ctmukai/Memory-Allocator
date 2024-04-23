@@ -38,7 +38,7 @@ static listThatIsFree* past = NULL;
 //                                        //
 //----------------------------------------//
 
-//testing roundingPages functionality
+//removed as i integrated the page rounding into umeminit
 /*void pageRoundTest() {
     size_t sizes[] = {0, 1, 4096, 8192, 63, 41, 33, 26};
     printf("testing roundingPage function:\n");
@@ -68,6 +68,7 @@ int umeminit(size_t sizeOfRegion, int allocationAlgo) {
     }
 
     size_t pageSize = getpagesize();
+    //round pages to whole amount
     sizeOfRegion = (sizeOfRegion + pageSize - 1) / pageSize;
     sizeOfRegion *= pageSize;
     int fd = open("/dev/zero", O_RDWR);
@@ -103,7 +104,6 @@ void *umalloc(size_t size) {
                 return NULL;
             
             listThatIsFree* bf = NULL;
-            listThatIsFree* lastBF = NULL;
             size_t bfSize = SIZE_MAX;
             present = luffy;
 
@@ -133,44 +133,55 @@ void *umalloc(size_t size) {
             }
 
         case WORST_FIT:
+        size = align(size);
             present = luffy;
             listThatIsFree* wf = NULL;
             size_t wfSize = 0;
+            listThatIsFree* roger = NULL;
+
+            //fail if no size is declared
+            if (size == 0) {
+                return NULL;
+            }
 
             while (present != NULL) {
                 if (present -> size >= size && present -> size > wfSize) {
                     wf = present;
                     wfSize = present -> size;
                 }
+                roger = present;
                 present = present -> next;
             }
 
             if (wf == NULL) {
                 return NULL;
             }
-
-            if (wfSize > size + sizeof(listThatIsFree)) {
-                listThatIsFree* newWorld = (listThatIsFree*)((char*)wf + size + sizeof(listThatIsFree));
-                newWorld -> size = wfSize - size - sizeof(listThatIsFree);
-                newWorld -> next = wf -> next;
-                wf -> size = size;
-                wf -> next = newWorld;
-            }
-
-            if (wf == luffy) {
-                luffy = wf -> next;
-            } else {
-                present = luffy;
-                while (present -> next != wf) {
-                    present = present -> next;
+            if (wf != NULL) {
+                if (wf -> size > size + sizeof(listThatIsFree)) {
+                    listThatIsFree* newWorld = (listThatIsFree*)((char*)wf + size + sizeof(listThatIsFree));
+                    newWorld -> size = wf -> size - size - sizeof(listThatIsFree);
+                    newWorld -> next = wf -> next;
+                    wf -> size = size;
+                    wf -> next = newWorld;
+                } else {
+                    if (roger != NULL) {
+                        roger -> next = wf -> next;
+                    } else {
+                        luffy = wf -> next;
+                    }
                 }
-                present -> next = wf -> next;
+                return (void*)(wf + 1);
             }
-            return (void*)(wf + 1);
+            return NULL;
 
-        case NEXT_FIT:
-
+        case NEXT_FIT: //segfault, allocation incorrect. Will try to fix before turn in
+            size = align(size);
             listThatIsFree* present = zoro ? zoro : luffy;
+
+            //fail if no size is declared
+            if (size == 0) {
+                return NULL;
+            }
 
             while (present != NULL) {
                 if (present -> size >= size) {
@@ -195,8 +206,17 @@ void *umalloc(size_t size) {
             }
             return NULL;
 
-        case FIRST_FIT:
+        case FIRST_FIT: //segfault, allocation incorrect. Will try to fix before turn in
             present = luffy;
+            size = align(size);
+            //fail if no size is declared
+            if (size == 0) {
+                return NULL;
+            }
+
+            /*if (!AA) {
+                break;
+            }*/
 
             while (present != NULL) {
                 if (present -> size >= size) {
@@ -227,13 +247,13 @@ void *umalloc(size_t size) {
 }
 
 int ufree(void *ptr) {
-    if (ptr == NULL) {
+    if (!ptr) {
         return 0;
     }
     listThatIsFree* impelDown = (listThatIsFree*)ptr - 1;
     listThatIsFree* past = NULL;
     listThatIsFree* present = luffy;
-
+    
     while (present != NULL) {
         if ((char*)present + present -> size + sizeof(listThatIsFree) == (char*)impelDown) {
             impelDown -> size += present -> size + sizeof(listThatIsFree);
@@ -270,7 +290,7 @@ void umemdump() {
     listThatIsFree* present = luffy;
     int counterspell = 0;
     while (present != NULL) {
-        printf("Chunk %d: Address %p, Size: %zu bytes, Next Chunk: %p\n", counterspell++, (void*)present, present -> size, (void*)present -> next);
+        printf("Chunk %d: Address %p, Size: %zu bytes, Next Chunk: %p\n", counterspell++, (void*)present, present -> size, present -> next);
         present = present -> next;
     }
 }
