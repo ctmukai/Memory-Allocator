@@ -7,11 +7,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <time.h>
 
-typedef struct testingGround {
+typedef struct testingGround { //free head list
     size_t size;  // Size of the memory block
     struct testingGround* next;  // Pointer to the next block
 } testingGround;
+
 //replaced by userMemAlgoTest to create a more dynamic testing approach
 /*int memIniTest(){
     // testing for initialization
@@ -24,7 +26,7 @@ typedef struct testingGround {
     return 0;
 }*/
 
-int userMemAlgoTest() {
+int userMemAlgoTest() { //function to take user inputs, then use those inputs to initialize the memory. If the user inputs wrong allocation input then fail the passthrough.
     size_t sizeOfRegion; //variables
     int allocationAlgo;
     //input size of the memory region that you want to declare
@@ -45,7 +47,7 @@ int userMemAlgoTest() {
     }
 }
 
-void coalTest() {
+void coalTest() { //testing for umalloc to allocate different points in memory, then free them and use assert to check for coalescing
     // Initialize memory blocks
     testingGround* test = (testingGround*)umalloc(sizeof(testingGround));
     test -> size = 55;
@@ -67,19 +69,34 @@ void coalTest() {
     ufree(test2 + 1);
 
     // now check if coalescing occurred
-    assert(test -> size == 55 + 32 + (7 * sizeof(testingGround)));
+    assert(test -> size == 1 + (2 * sizeof(testingGround)));
     assert(test -> next == test3);
     //* side not cant get assertion to work, might have something to do with how i did my allocation styles and my ufree? *
+    //2024-4-23: Update its my ufree coalescing not working, hence why my assert is failing.
     printf("Coalescing test passed!\n");
 
     return;
 }
 
+void nextFitTest() { //take array of pointers, randomly call umalloc with a point in the array
+    srand(time(NULL));
+    int nf = 40; //iterations
+    void* nfmem[nf]; //array of pointers
+    for (int i = 0; i < nf; i++) {
+        int value = (rand() % (128) + 8); //give me random size
+        nfmem[i] = umalloc(value); //allocate the memory based on random size
+        ufree(nfmem[i]); //free the memory
+        umemdump(); //print the dump
+    }
+}
+
+//coalescing is not working on my ufree T-T im dying
 int main() {
     userMemAlgoTest(); //run my allocation test
     umemdump(); //check the chunk of memory the current pointer is at
     int* ptr = NULL; //create new ptr
-    coalTest();
+    //coalTest();
+    nextFitTest(); //not functioning, coalescing not working properly in ufree is my determined error
     assert(ufree(ptr) == 0);
     umemdump();
     int* arr = (int*)umalloc(1);

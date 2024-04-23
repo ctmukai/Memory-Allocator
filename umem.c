@@ -246,8 +246,8 @@ void *umalloc(size_t size) {
     }
 }
 
-int ufree(void *ptr) {
-    if (!ptr) {
+int ufree(void *ptr) { //currently, coalescing i believe is not correctly implemented which is why i keep getting segfault and assert failure
+    if (ptr == NULL) {
         return 0;
     }
     listThatIsFree* impelDown = (listThatIsFree*)ptr - 1;
