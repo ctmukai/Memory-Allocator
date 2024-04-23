@@ -94,6 +94,7 @@ void nextFitTest() { //take array of pointers, randomly call umalloc with a poin
 int main() {
     userMemAlgoTest(); //run my allocation test
     umemdump(); //check the chunk of memory the current pointer is at
+    umalloc(0); //allocate to new chunk
     int* ptr = NULL; //create new ptr
     //coalTest();
     nextFitTest(); //not functioning, coalescing not working properly in ufree is my determined error
@@ -110,8 +111,6 @@ int main() {
     else {
         printf("mem allo fail\n");
     }
-    umemdump();
-    umalloc(0); //allocate to new chunk
     umemdump();
     ufree(eightBound); //free memory and then check for changes
     umemdump();

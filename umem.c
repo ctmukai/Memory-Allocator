@@ -193,7 +193,7 @@ void *umalloc(size_t size) {
                         present -> next = newWorld;
                     }
 
-                    if (past == NULL) {
+                    if (past == NULL) { //I believe my logic is wrong in this section, as it is not remembering the previous left off node
                         luffy = present -> next;
                     } else {
                         past -> next = present -> next;
@@ -290,7 +290,7 @@ void umemdump() {
     listThatIsFree* present = luffy;
     int counterspell = 0;
     while (present != NULL) {
-        printf("Chunk %d: Address %p, Size: %zu bytes, Next Chunk: %p\n", counterspell++, (void*)present, present -> size, present -> next);
+        printf("Chunk %d: Address %p,\n Size: %zu bytes,\n Next Chunk: %p\n", counterspell++, (void*)present, present -> size, present -> next);
         present = present -> next;
     }
 }
